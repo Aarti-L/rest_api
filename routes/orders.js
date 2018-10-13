@@ -157,11 +157,71 @@ const getOrderDetails = (req,res,next) => {
       .catch(e => handleError({ code: 'SWW' }))
   }
 
+  const handleError = (e) => {
+    let errors = [
+      { code: 'MII', message: 'Missing Important Information' },
+      { code: 'NDF', message: 'No data found for provided Id' },
+      { code: 'SWW', message: 'Something went wrong' },
+    ];
+
+    errors.filter(error => error.code === e.code).map(err => {
+      res.status(500).send({
+        error: {
+          code: err.code,
+          message: err.message
+        }
+      })
+    })
+  }
+  
   validateInput(state);
 }
 
 const deleteOrder = (req, res, next) => {
   const state = { reqObj: req, reqBody: req.body, reqParams: req.params };
+
+  const validateInput = (state) => {
+    (!state.reqParams.orderId) ? handleError({ code: 'MII' }) : checkOrder(state);  
+  }
+
+  const checkOrder = (state) => {
+    Order
+      .findById(state.reqParams.orderId)
+      .exec()
+      .then(d => { 
+        (!d) ? handleError({ code: 'INVID' }) : deleteOrderData(state);
+      })
+      .catch(e => handleError({code:'SWW'}))
+  }
+
+  const deleteOrderData = (state) => {
+    Order
+      .deleteOne({ _id: state.reqParams.orderId })
+      .exec()
+      .then(d => {
+        res.status(200).send({
+          message: 'Order cancelled successfully'
+        });
+      })
+      .catch(e => handleError({code: 'SWW'}))
+  }
+
+  const handleError = (e) => {
+    let errors = [
+      { code: 'MII', message: 'Missing Important Information' },
+      { code: 'INVID', message: 'Invalid order Id' },
+      { code: 'SWW', message: 'Something went wrong' },
+    ];
+
+    errors.filter(error => error.code === e.code).map(err => {
+      res.status(500).send({
+        error: {
+          code: err.code,
+          message: err.message
+        }
+      })
+    })
+  }
 
   validateInput(state);
 } 
