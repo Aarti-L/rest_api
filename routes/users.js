@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const User = require('../models/user');
+const { checkAdmin } = require('../middlewares/checkAuth');
 
 const router = express.Router();
 
@@ -76,75 +77,75 @@ const getUserDetails = (req, res, next) => {
   validateInput(state)
 }
 
-const addUser = (req, res, next) => {
-  const state = { reqObj: req, reqBody: req.body };
+// const addUser = (req, res, next) => {
+//   const state = { reqObj: req, reqBody: req.body };
 
-  const validateInput = (state) => {
-    (!state.reqBody.username || !state.reqBody.email || !state.reqBody.password) ? handleError({ code: 'MII' }) : checkEmail(state);
-  }
+//   const validateInput = (state) => {
+//     (!state.reqBody.username || !state.reqBody.email || !state.reqBody.password) ? handleError({ code: 'MII' }) : checkEmail(state);
+//   }
 
-  const checkEmail = (state) => {
-    User
-      .findOne({ email: state.reqBody.email.toLowerCase() })
-      .then(d => {
-        (!d) ? createHash(state) : handleError({code: 'DUE'})
-      })
-      .catch(e => {
-        handleError({code: 'SWW'})
-      })
-  }
+//   const checkEmail = (state) => {
+//     User
+//       .findOne({ email: state.reqBody.email.toLowerCase() })
+//       .then(d => {
+//         (!d) ? createHash(state) : handleError({code: 'DUE'})
+//       })
+//       .catch(e => {
+//         handleError({code: 'SWW'})
+//       })
+//   }
 
-  const createHash = (state) => {
-    const salt = bcrypt.genSaltSync(10);
-    bcrypt.hash(state.reqBody.password, salt, (err, hash) => {
-      (err) ? handleError({ code: 'SWW' }) : saveUser(Object.assign({},state,{ hashPassword:hash }));
-    });
-  }
+//   const createHash = (state) => {
+//     const salt = bcrypt.genSaltSync(10);
+//     bcrypt.hash(state.reqBody.password, salt, (err, hash) => {
+//       (err) ? handleError({ code: 'SWW' }) : saveUser(Object.assign({},state,{ hashPassword:hash }));
+//     });
+//   }
 
-  const saveUser = (state) => {
-    const user = new User({
-      _id: new mongoose.Types.ObjectId(),
-      username: state.reqBody.username,
-      email: state.reqBody.email,
-      password: state.hashPassword
-    });
+//   const saveUser = (state) => {
+//     const user = new User({
+//       _id: new mongoose.Types.ObjectId(),
+//       username: state.reqBody.username,
+//       email: state.reqBody.email,
+//       password: state.hashPassword
+//     });
 
-    user
-      .save()
-      .then(d => {
-        res.status(201).send({
-          message: 'User created',
-          user: {
-            username: d.username,
-            email: d.email,
-            usertype: d.usertype
-          }
-        })
-      })
-      .catch(e => {
-        handleError({code: 'SWW'})
-      })
-  }
+//     user
+//       .save()
+//       .then(d => {
+//         res.status(201).send({
+//           message: 'User created',
+//           user: {
+//             username: d.username,
+//             email: d.email,
+//             usertype: d.usertype
+//           }
+//         })
+//       })
+//       .catch(e => {
+//         handleError({code: 'SWW'})
+//       })
+//   }
 
-  const handleError = (e) => {
-    let errors = [
-      { code: 'DUE', message: 'Email already exist' },
-      { code: 'MII', message: 'Missing Important Information' },
-      { code: 'SWW', message: 'Something went wrong' },
-    ];
+//   const handleError = (e) => {
+//     let errors = [
+//       { code: 'DUE', message: 'Email already exist' },
+//       { code: 'MII', message: 'Missing Important Information' },
+//       { code: 'SWW', message: 'Something went wrong' },
+//     ];
 
-    errors.filter(error => error.code === e.code).map(err => {
-      res.status(500).send({
-        error: {
-          code: err.code,
-          message: err.message
-        }
-      })
-    })
-  }  
+//     errors.filter(error => error.code === e.code).map(err => {
+//       res.status(500).send({
+//         error: {
+//           code: err.code,
+//           message: err.message
+//         }
+//       })
+//     })
+//   }  
   
-  validateInput(state);
-}
+//   validateInput(state);
+// }
 
 const updateUser = (req, res, next) => {
   const state = { reqObj: req, reqBody: req.body, reqParams: req.params };
@@ -258,8 +259,8 @@ const deleteUser = (req, res, next) => {
   validateInput(state);
 }
 
-router.get('/', getUsers);
-router.post('/', addUser);
+router.get('/', checkAdmin, getUsers);
+// router.post('/', addUser);
 router.get('/:userId', getUserDetails);
 router.patch('/:userId', updateUser);
 router.delete('/:userId', deleteUser);

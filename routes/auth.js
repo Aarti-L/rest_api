@@ -65,6 +65,73 @@ const login = (req,res,next) => {
   validateInput(state);
 }
 
-router.post('/', login);
+const signup = (req, res, next) => {
+  const state = {reqObj: req,reqBody: req.body};
+
+  const validateInput = (state) => {
+    (!state.reqBody.username || !state.reqBody.email || !state.reqBody.password) ? handleError({code: 'MII'}): checkEmail(state);
+  }
+
+  const checkEmail = (state) => {
+    User
+      .findOne({email: state.reqBody.email.toLowerCase()})
+      .then(d => {
+        (!d) ? createHash(state): handleError({code: 'DUE'})
+      })
+      .catch(e => handleError({ code: 'SWW' }))
+  }
+
+  const createHash = (state) => {
+    const salt = bcrypt.genSaltSync(10);
+    bcrypt.hash(state.reqBody.password, salt, (err, hash) => {
+      (err) ? handleError({code: 'SWW'}): saveUser(Object.assign({}, state, { hashPassword: hash}));
+    });
+  }
+
+  const saveUser = (state) => {
+    const user = new User({
+      _id: new mongoose.Types.ObjectId(),
+      username: state.reqBody.username,
+      email: state.reqBody.email,
+      password: state.hashPassword
+    });
+
+    user
+      .save()
+      .then(d => {
+        res.status(201).send({
+          message: 'User created',
+          user: {
+            username: d.username,
+            email: d.email,
+            usertype: d.usertype
+          }
+        })
+      })
+      .catch(e => handleError({code: 'SWW'}))
+  }
+
+  const handleError = (e) => {
+    let errors = [
+      {code: 'DUE',message: 'Email already exist'},
+      {code: 'MII',message: 'Missing Important Information'},
+      {code: 'SWW',message: 'Something went wrong'}
+    ];
+
+    errors.filter(error => error.code === e.code).map(err => {
+      res.status(500).send({
+        error: {
+          code: err.code,
+          message: err.message
+        }
+      })
+    })
+  }
+
+  validateInput(state);
+}
+
+router.post('/login', login);
+router.post('/signup', signup);
 
 module.exports = router;

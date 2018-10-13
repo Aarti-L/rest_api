@@ -8,7 +8,7 @@ const userRoutes = require('./routes/users');
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
-const {checkUser} = require('./middlewares/checkAuth');
+const { checkUser,checkToken } = require('./middlewares/checkAuth');
 
 const app = express();
 
@@ -36,7 +36,7 @@ app.use((req,res,next) => {
   next();
 })
 
-app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/users', checkToken, userRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/orders', checkUser, orderRoutes);
